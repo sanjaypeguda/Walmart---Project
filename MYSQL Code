@@ -1,0 +1,128 @@
+use walmart_db;
+--------------------------------------------------------------------------
+select * from walmart;
+
+select count(*) from walmart;
+
+select distinct(payment_method) from walmart;
+
+select payment_method, count(*)payment_method
+from walmart
+group by payment_method;
+
+select count(distinct branch) from walmart;
+
+select min(total) , max(total) , avg(total), std(total)
+from walmart;
+
+select min(quantity) , max(quantity) , avg(quantity), std(quantity)
+from walmart;
+
+select category , count(category) 
+from walmart
+group by category;
+
+select city , count(city) 
+from walmart
+group by city;
+----------------------------------------------------------------------------
+-- Question 1
+-- Find different payment method and number of transactions 
+-- and sum of quantities sold
+select payment_method , 
+count(payment_method) as 'no_of_transactions', 
+sum(quantity) as 'total_quantity'
+from walmart
+group by payment_method;
+
+-- Question 2
+-- Identify the highest-rated category in each branch ,
+-- displaying branch , category and avg_rating
+SELECT branch, category, avg_rating 
+FROM (
+    SELECT 
+        branch,
+        category,
+        AVG(rating) AS avg_rating,
+        RANK() OVER (PARTITION BY branch ORDER BY AVG(rating) DESC) AS `rank`
+    FROM walmart
+    GROUP BY branch, category
+) AS ranked 
+WHERE `rank` = 1;
+
+-- Question 3 
+-- Identiy the busiest day of each branch based on transations 
+SELECT branch, day_name, no_transactions
+FROM (
+    SELECT 
+        branch,
+        DAYNAME(STR_TO_DATE(date, '%d/%m/%Y')) AS day_name,
+        COUNT(*) AS no_transactions,
+        DENSE_RANK() OVER(PARTITION BY branch ORDER BY COUNT(*) DESC) AS `rank`
+    FROM walmart
+    GROUP BY branch, DAYNAME(STR_TO_DATE(date, '%d/%m/%Y'))
+) AS ranked
+WHERE `rank` = 1;
+
+-- Question 4 
+-- Calculate the total quantity of items sold per payment method
+select payment_method , 
+sum(quantity) as 'total_quantity'
+from walmart
+group by payment_method;
+
+-- Question 5 
+-- Determine the average, minimum, and maximum rating of categories for each city
+select City , category,
+avg(rating) as 'avg_rating',
+min(rating) as 'min_rating',
+max(rating) as 'max_rating'
+from walmart
+group by  City ,category;
+
+-- Question 6 
+-- Calculate the total profit for each category
+select category,
+sum(unit_price * quantity * profit_margin) as 'total_profit'
+from walmart
+group by category;
+
+-- Question 7 
+-- Determine the most common payment method for each branch
+WITH cte AS (
+    SELECT 
+        branch,
+        payment_method,
+        COUNT(*) AS total_trans,
+        RANK() OVER(PARTITION BY branch ORDER BY COUNT(*) DESC) AS `rank`
+    FROM walmart
+    GROUP BY branch, payment_method
+)
+SELECT branch, payment_method AS preferred_payment_method
+FROM cte
+WHERE `rank` = 1;
+
+-- Question 8 
+-- Categorize sales into Morning, Afternoon, and Evening shifts
+SELECT
+    branch,
+    CASE 
+        WHEN HOUR(time) < 12 THEN 'Morning'
+        WHEN HOUR(time) BETWEEN 12 AND 17 THEN 'Afternoon'
+        ELSE 'Evening'
+    END AS shift,
+    COUNT(*) AS num_invoices
+FROM walmart
+GROUP BY branch, shift
+ORDER BY branch, num_invoices DESC;
+
+-----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
